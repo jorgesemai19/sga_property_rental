@@ -1,0 +1,13 @@
+<odoo>
+  <data>
+    <record id="group_rental_user" model="res.groups">
+      <field name="name">Alquileres / Usuario</field>
+      <field name="category_id" ref="base.module_category_hidden"/>
+    </record>
+    <record id="group_rental_manager" model="res.groups">
+      <field name="name">Alquileres / Manager</field>
+      <field name="implied_ids" eval="[(4, ref('group_rental_user'))]"/>
+      <field name="category_id" ref="base.module_category_hidden"/>
+    </record>
+  </data>
+</odoo>

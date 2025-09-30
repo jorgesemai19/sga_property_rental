@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+rental_property_user,property user,model_rental_property,group_rental_user,1,1,1,0
+rental_property_manager,property manager,model_rental_property,group_rental_manager,1,1,1,1
+rental_inventory_user,inventory user,model_rental_property_inventory,group_rental_user,1,1,1,0
+rental_inventory_line_user,inventory line user,model_rental_property_inventory_line,group_rental_user,1,1,1,0
+rental_contract_user,contract user,model_rental_contract,group_rental_user,1,1,1,0
+rental_contract_manager,contract manager,model_rental_contract,group_rental_manager,1,1,1,1
+rental_visit_user,visit user,model_rental_visit,group_rental_user,1,1,1,0
+rental_visit_manager,visit manager,model_rental_visit,group_rental_manager,1,1,1,1

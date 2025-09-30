@@ -1,0 +1,76 @@
+<odoo>
+  <data>
+    <record id="view_rental_property_list" model="ir.ui.view">
+      <field name="name">rental.property.list</field>
+      <field name="model">rental.property</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="name"/>
+          <field name="owner_id"/>
+          <field name="city"/>
+          <field name="current_contract_id"/>
+          <field name="active"/>
+        </list>
+      </field>
+    </record>
+
+    <record id="view_rental_property_form" model="ir.ui.view">
+      <field name="name">rental.property.form</field>
+      <field name="model">rental.property</field>
+      <field name="arch" type="xml">
+        <form>
+          <sheet>
+            <group>
+              <field name="name"/>
+              <field name="image_1920" widget="image"/>
+            </group>
+            <group>
+              <field name="owner_id"/>
+              <field name="street"/>
+              <field name="city"/>
+              <field name="state_id"/>
+              <field name="country_id"/>
+              <field name="active"/>
+            </group>
+            <notebook>
+              <page string="Inventarios">
+                <field name="inventory_ids">
+                  <list editable="bottom">
+                    <field name="date"/>
+                    <field name="note"/>
+                  </list>
+                  <form>
+                    <group>
+                      <field name="date"/>
+                      <field name="note"/>
+                      <field name="line_ids">
+                        <list editable="bottom">
+                          <field name="name"/>
+                          <field name="quantity"/>
+                          <field name="condition"/>
+                          <field name="image" widget="image"/>
+                        </list>
+                      </field>
+                    </group>
+                  </form>
+                </field>
+              </page>
+              <page string="Contratos">
+                <!-- Usar id (no active_id) para setear el default en el one2many -->
+                <field name="contract_ids" context="{'default_property_id': id}">
+                  <list>
+                    <field name="name"/>
+                    <field name="tenant_id"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                    <field name="state"/>
+                  </list>
+                </field>
+              </page>
+            </notebook>
+          </sheet>
+        </form>
+      </field>
+    </record>
+  </data>
+</odoo>

@@ -1,0 +1,14 @@
+<odoo>
+  <data noupdate="1">
+    <record id="ir_cron_generate_monthly_rents" model="ir.cron">
+      <field name="name">Alquileres: Generar facturas mensuales</field>
+      <field name="model_id" ref="model_rental_contract"/>
+      <field name="state">code</field>
+      <field name="code">model.cron_generate_monthly_rents()</field>
+      <field name="interval_number">1</field>
+      <field name="interval_type">days</field>
+      <field name="active">True</field>
+      <field name="user_id" ref="base.user_root"/>
+    </record>
+  </data>
+</odoo>

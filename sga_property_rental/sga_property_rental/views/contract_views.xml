@@ -1,0 +1,82 @@
+<odoo>
+  <data>
+    <!-- LISTA -->
+    <record id="view_rental_contract_list" model="ir.ui.view">
+      <field name="name">rental.contract.list</field>
+      <field name="model">rental.contract</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="name"/>
+          <field name="property_id"/>
+          <field name="tenant_id"/>
+          <field name="start_date"/>
+          <field name="end_date"/>
+          <field name="day_due"/>
+          <field name="rent_amount"/>
+          <field name="deposit_amount"/>
+          <field name="state"/>
+        </list>
+      </field>
+    </record>
+
+    <!-- FORM -->
+    <record id="view_rental_contract_form" model="ir.ui.view">
+      <field name="name">rental.contract.form</field>
+      <field name="model">rental.contract</field>
+      <field name="arch" type="xml">
+        <form>
+          <header>
+            <!-- reemplazo de states="draft" -> invisible -->
+            <button name="action_activate" string="Activar" type="object"
+                    invisible="state != 'draft'"/>
+            <!-- reemplazo de states="active" -> invisible -->
+            <button name="action_close" string="Cerrar" type="object"
+                    invisible="state != 'active'"/>
+            <field name="state" widget="statusbar" statusbar_visible="draft,active,closed,cancel"/>
+          </header>
+          <sheet>
+            <group>
+              <field name="name" readonly="1"/>
+              <field name="property_id" required="1"/>
+              <field name="tenant_id" required="1"/>
+              <field name="agent_id"/>
+            </group>
+            <group>
+              <field name="start_date" required="1"/>
+              <field name="end_date"/>
+              <field name="day_due"/>
+            </group>
+            <group>
+              <field name="rent_amount"/>
+              <field name="deposit_amount"/>
+              <field name="currency_id" groups="base.group_no_one"/>
+            </group>
+            <notebook>
+              <page string="Facturas (Cliente)">
+                <!-- usar id (no active_id) y <list> -->
+                <field name="invoice_ids" context="{'default_rental_contract_id': id, 'default_rental_property_id': property_id}">
+                  <list>
+                    <field name="name"/>
+                    <field name="invoice_date"/>
+                    <field name="amount_total"/>
+                    <field name="state"/>
+                  </list>
+                </field>
+              </page>
+              <page string="Adjuntos">
+                <field name="attachment_ids" widget="many2many_binary"/>
+              </page>
+            </notebook>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <!-- Acción -->
+    <record id="action_rental_contract" model="ir.actions.act_window">
+      <field name="name">Contratos</field>
+      <field name="res_model">rental.contract</field>
+      <field name="view_mode">list,form</field>
+    </record>
+  </data>
+</odoo>
