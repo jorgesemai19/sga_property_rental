@@ -1,44 +1,51 @@
 <odoo>
-  <data>
-    <!-- Acción: Propiedades (la creamos acá para que exista antes de referenciarla) -->
-    <record id="action_rental_property" model="ir.actions.act_window">
-      <field name="name">Propiedades</field>
-      <field name="res_model">rental.property</field>
-      <field name="view_mode">list,form</field>
-    </record>
+    <data>
+        <!-- Acción: Propiedades (la creamos acá para que exista antes de referenciarla) -->
+        <record id="action_rental_property" model="ir.actions.act_window">
+            <field name="name">Propiedades</field>
+            <field name="res_model">rental.property</field>
+            <field name="view_mode">list,form</field>
+        </record>
 
-    <!-- Menú raíz con icono y acción por defecto -->
-    <menuitem id="menu_rental_root"
-              name="Alquileres"
-              sequence="55"
-              web_icon="sga_property_rental,static/description/icon.png"
-              action="action_rental_property"/>
+        <!-- Menú raíz con icono y acción por defecto -->
+        <menuitem id="menu_rental_root"
+                  name="Alquileres"
+                  sequence="55"
+                  web_icon="sga_property_rental,static/description/icon.png"
+                  action="action_rental_property"/>
 
-    <!-- Submenú Maestros -->
-    <menuitem id="menu_rental_master"
-              name="Maestros"
-              parent="menu_rental_root"
-              sequence="10"/>
+        <!-- Submenú Maestros -->
+        <menuitem id="menu_rental_master"
+                  name="Maestros"
+                  parent="menu_rental_root"
+                  sequence="10"/>
 
-    <!-- Propiedades -->
-    <menuitem id="menu_rental_property"
-              name="Propiedades"
-              parent="menu_rental_master"
-              action="action_rental_property"
-              sequence="10"/>
+        <!-- Propiedades -->
+        <menuitem id="menu_rental_property"
+                  name="Propiedades"
+                  parent="menu_rental_master"
+                  action="action_rental_property"
+                  sequence="10"/>
 
-    <!-- Contratos (esta acción la definimos en contract_views.xml) -->
-    <menuitem id="menu_rental_contract"
-              name="Contratos"
-              parent="menu_rental_root"
-              action="action_rental_contract"
-              sequence="20"/>
+        <!-- Contratos (esta acción la definimos en contract_views.xml) -->
+        <menuitem id="menu_rental_contract"
+                  name="Contratos"
+                  parent="menu_rental_root"
+                  action="action_rental_contract"
+                  sequence="20"/>
 
-    <!-- Visitas (esta acción la definimos en visit_views.xml) -->
-    <menuitem id="menu_rental_visit"
-              name="Visitas"
-              parent="menu_rental_root"
-              action="action_rental_visit"
-              sequence="30"/>
-  </data>
+        <!-- Visitas (esta acción la definimos en visit_views.xml) -->
+        <menuitem id="menu_rental_visit"
+                  name="Visitas"
+                  parent="menu_rental_root"
+                  action="action_rental_visit"
+                  sequence="30"/>
+
+        <!-- Clausulas de contratos (esta acción la definimos en clause_form_views.xml) -->
+        <menuitem id="menu_rental_clause"
+                  name="Clausulas"
+                  parent="menu_rental_root"
+                  action="action_rental_clause"
+                  sequence="35"/>
+    </data>
 </odoo>

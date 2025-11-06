@@ -7,3 +7,10 @@ rental_contract_user,contract user,model_rental_contract,group_rental_user,1,1,1
 rental_contract_manager,contract manager,model_rental_contract,group_rental_manager,1,1,1,1
 rental_visit_user,visit user,model_rental_visit,group_rental_user,1,1,1,0
 rental_visit_manager,visit manager,model_rental_visit,group_rental_manager,1,1,1,1
+access_rental_contract_clause_line_user,rental.contract.clause.line user,model_rental_contract_clause_line,base.group_user,1,1,1,1
+rental_property_type_user,property type user,model_rental_property_type,group_rental_user,1,0,0,0
+rental_property_type_manager,property type manager,model_rental_property_type,group_rental_manager,1,1,1,1
+rental_building_user,building user,model_rental_building,group_rental_user,1,1,1,0
+rental_building_manager,building manager,model_rental_building,group_rental_manager,1,1,1,1
+access_rental_clause_user,access.rental.clause.user,model_rental_clause,base.group_user,1,0,0,0
+access_rental_clause_manager,access.rental.clause.manager,model_rental_clause,group_rental_manager,1,1,1,1

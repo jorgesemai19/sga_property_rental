@@ -1,76 +1,252 @@
 <odoo>
-  <data>
-    <record id="view_rental_property_list" model="ir.ui.view">
-      <field name="name">rental.property.list</field>
-      <field name="model">rental.property</field>
-      <field name="arch" type="xml">
-        <list>
-          <field name="name"/>
-          <field name="owner_id"/>
-          <field name="city"/>
-          <field name="current_contract_id"/>
-          <field name="active"/>
-        </list>
-      </field>
-    </record>
-
-    <record id="view_rental_property_form" model="ir.ui.view">
-      <field name="name">rental.property.form</field>
-      <field name="model">rental.property</field>
-      <field name="arch" type="xml">
-        <form>
-          <sheet>
-            <group>
-              <field name="name"/>
-              <field name="image_1920" widget="image"/>
-            </group>
-            <group>
-              <field name="owner_id"/>
-              <field name="street"/>
-              <field name="city"/>
-              <field name="state_id"/>
-              <field name="country_id"/>
-              <field name="active"/>
-            </group>
-            <notebook>
-              <page string="Inventarios">
-                <field name="inventory_ids">
-                  <list editable="bottom">
-                    <field name="date"/>
-                    <field name="note"/>
-                  </list>
-                  <form>
-                    <group>
-                      <field name="date"/>
-                      <field name="note"/>
-                      <field name="line_ids">
-                        <list editable="bottom">
-                          <field name="name"/>
-                          <field name="quantity"/>
-                          <field name="condition"/>
-                          <field name="image" widget="image"/>
-                        </list>
-                      </field>
-                    </group>
-                  </form>
-                </field>
-              </page>
-              <page string="Contratos">
-                <!-- Usar id (no active_id) para setear el default en el one2many -->
-                <field name="contract_ids" context="{'default_property_id': id}">
-                  <list>
+    <data>
+        <!-- VISTAS TIPO DE PROPIEDAD -->
+        <record id="view_rental_property_type_list" model="ir.ui.view">
+            <field name="name">rental.property.type.list</field>
+            <field name="model">rental.property.type</field>
+            <field name="arch" type="xml">
+                <list>
                     <field name="name"/>
-                    <field name="tenant_id"/>
-                    <field name="start_date"/>
-                    <field name="end_date"/>
-                    <field name="state"/>
-                  </list>
-                </field>
-              </page>
-            </notebook>
-          </sheet>
-        </form>
-      </field>
-    </record>
-  </data>
+                    <field name="code"/>
+                    <field name="description"/>
+                    <field name="active"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_rental_property_type_form" model="ir.ui.view">
+            <field name="name">rental.property.type.form</field>
+            <field name="model">rental.property.type</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="description"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_rental_property_type" model="ir.actions.act_window">
+            <field name="name">Tipos de Propiedad</field>
+            <field name="res_model">rental.property.type</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <!-- VISTAS EDIFICIOS -->
+        <record id="view_rental_building_list" model="ir.ui.view">
+            <field name="name">rental.building.list</field>
+            <field name="model">rental.building</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="name"/>
+                    <field name="street"/>
+                    <field name="city"/>
+                    <field name="property_count"/>
+                    <field name="active"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_rental_building_form" model="ir.ui.view">
+            <field name="name">rental.building.form</field>
+            <field name="model">rental.building</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="street"/>
+                            <field name="city"/>
+                            <field name="state_id"/>
+                            <field name="country_id"/>
+                            <field name="active"/>
+                        </group>
+                        <notebook>
+                            <page string="Unidades">
+                                <field name="property_ids"
+                                       context="{'default_building_id': id, 'default_property_structure': 'horizontal'}">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="unit_number"/>
+                                        <field name="floor"/>
+                                        <field name="property_type_id"/>
+                                        <field name="owner_id"/>
+                                        <field name="current_contract_id"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_rental_building" model="ir.actions.act_window">
+            <field name="name">Edificios</field>
+            <field name="res_model">rental.building</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <!-- VISTAS PROPIEDADES -->
+        <record id="view_rental_property_list" model="ir.ui.view">
+            <field name="name">rental.property.list</field>
+            <field name="model">rental.property</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="property_type_id"/>
+                    <field name="property_structure"/>
+                    <field name="rental_type"/>
+                    <field name="owner_id"/>
+                    <field name="city"/>
+                    <field name="zone_type"/>
+                    <field name="current_contract_id"/>
+                    <field name="active"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_rental_property_form" model="ir.ui.view">
+            <field name="name">rental.property.form</field>
+            <field name="model">rental.property</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Ej: Casa en Centro"/>
+                            </h1>
+                            <h3>
+                                <field name="code" readonly="1"/>
+                            </h3>
+                        </div>
+
+                        <group>
+                            <group>
+                                <field name="property_type_id"/>
+                                <field name="property_structure"/>
+                                <field name="rental_type"/>
+                                <field name="owner_id"/>
+                                <field name="acquisition_date"/>
+                                <field name="zone_type"/>
+                                <field name="active"/>
+                            </group>
+                            <group>
+                                <field name="image_1920" widget="image"/>
+                            </group>
+                        </group>
+
+                        <group string="Propiedad Horizontal" invisible="property_structure != 'horizontal'">
+                            <group>
+                                <field name="building_id" required="property_structure == 'horizontal'"/>
+                                <field name="unit_number"/>
+                                <field name="floor"/>
+                            </group>
+                        </group>
+
+
+                        <group string="Ubicación">
+                            <group>
+                                <field name="street1"/>
+                                <field name="house_number"/>
+                                <field name="street2"/>
+                                <field name="reference"/>
+                                <field name="city"/>
+                            </group>
+                            <group>
+                                <field name="state_id"/>
+                                <field name="country_id"/>
+                            </group>
+                        </group>
+
+
+                        <group string="Datos Catastrales">
+                            <group>
+                                <field name="cadastral_account"/>
+                                <field name="padron"/>
+                            </group>
+                            <group>
+                                <field name="block"/>
+                                <field name="lot"/>
+                            </group>
+                        </group>
+
+
+                        <notebook>
+                            <page string="Condición del inmueble">
+                                <field name="inventory_ids">
+                                    <!-- Lista de inventarios por fecha con columnas nuevas -->
+                                    <list editable="bottom">
+                                        <field name="date"/>
+                                        <field name="paint_state"/>
+                                        <field name="plumbing_state"/>
+                                        <field name="electrical_state"/>
+                                        <field name="note"/>
+                                    </list>
+
+                                    <!-- Formulario de un inventario -->
+                                    <form>
+                                        <group>
+                                            <group>
+                                                <field name="date"/>
+                                                <field name="note"/>
+                                            </group>
+                                            <group>
+                                                <field name="paint_state"/>
+                                                <field name="plumbing_state"/>
+                                                <field name="electrical_state"/>
+                                                <!-- descomenta si agregaste más campos en el modelo
+                                                <field name="roof_state"/>
+                                                <field name="walls_state"/>
+                                                -->
+                                            </group>
+                                        </group>
+
+                                        <group string="Detalle de ítems (si corresponde)">
+                                            <field name="line_ids">
+                                                <list editable="bottom">
+                                                    <field name="name"/>
+                                                    <field name="quantity"/>
+                                                    <field name="condition"/>
+                                                    <field name="image" widget="image"/>
+                                                </list>
+                                            </field>
+                                        </group>
+                                    </form>
+                                </field>
+                            </page>
+                            <page string="Contratos">
+                                <!-- Usar id (no active_id) para setear el default en el one2many -->
+                                <field name="contract_ids" context="{'default_property_id': id}">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="tenant_id"/>
+                                        <field name="start_date"/>
+                                        <field name="end_date"/>
+                                        <field name="state"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                        <group string="Mapa" colspan="4">
+                            <field name="geo_latitude"/>
+                            <field name="geo_longitude"/>
+                            <field name="map_address" readonly="1"/>
+
+                            <!-- Mapa embebido -->
+                            <field name="map_iframe" widget="html" nolabel="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+    </data>
 </odoo>

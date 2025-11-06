@@ -1,0 +1,13 @@
+<odoo>
+  <data>
+    <template id="agendar_visita_template" name="Agendar Visita">
+      <t t-call="website.layout">
+        <div class="container py-5">
+          <h1>Agendar visita</h1>
+          <p t-esc="product.name"/>
+          <!-- tu formulario / info aquí -->
+        </div>
+      </t>
+    </template>
+  </data>
+</odoo>

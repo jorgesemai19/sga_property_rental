@@ -1,0 +1,190 @@
+<odoo>
+    <data>
+
+        <record id="report_contract_full" model="ir.actions.report">
+            <field name="name">Ficha completa de contrato (V3)</field>
+            <field name="model">rental.contract</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">sga_property_rental.report_contract_full_doc</field>
+            <field name="report_file">sga_property_rental.report_contract_full_doc</field>
+            <field name="print_report_name">'Contrato_%s' % (object.name or 'sin_nombre')</field>
+        </record>
+
+        <template id="report_contract_full_doc">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+                            <h2 class="text-center">Contrato de
+                                <t t-esc="o.property_id.rental_type if o.property_id.rental_type else ''"/>
+                            </h2>
+
+                            <p>
+                                Entre
+                                <t t-esc="o.property_id.owner_id.display_name if o.property_id.owner_id else ''"/>
+                                , con RUC/CI
+                                <t t-esc="o.property_id.owner_id.vat if o.property_id.owner_id and o.property_id.owner_id.vat else ''"/>
+                                ,
+                                con domicilio en
+                                <t t-esc="', '.join([p for p in [
+                                    o.property_id.owner_id.street or '',
+                                    o.property_id.owner_id.city or '',
+                                    (o.property_id.owner_id.state_id and o.property_id.owner_id.state_id.name) or ''] if p])"/>
+                                ,
+                                en su carácter de <strong>Propietario</strong>; y por otra parte el
+                                <strong>Inquilino</strong>
+                                <t t-esc="o.tenant_id.display_name if o.tenant_id else ''"/>,
+                                con cédula/RUC Nº
+                                <t t-esc="o.tenant_id.vat if o.tenant_id and o.tenant_id.vat else ''"/>,
+                                Tel:
+                                <t t-esc="o.tenant_id.mobile or o.tenant_id.phone or ''"/>, con domicilio laboral en
+                                <t t-esc="', '.join([p for p in [
+                                    o.tenant_id.street or '',
+                                    o.tenant_id.city or '',
+                                    (o.tenant_id.state_id and o.tenant_d.state_id.name) or ''] if p])"/>.
+                                Ambas partes convienen en celebrar el presente Contrato de Locación del inmueble
+                                identificado como<t t-esc="o.property_id.name or ''"/>, en la direccion
+                                <t t-esc="o.property_id.street1 or ''"/>
+                                <t t-esc="(' N° ' + o.property_id.house_number) if o.property_id.house_number else ''"/>
+                                <t t-esc="(', ' + o.property_id.street2) if o.property_id.street2 else ''"/>,
+                                con las siguientes cláusulas:
+                                <t t-if="o.clause_line_ids">
+                                    <hr/>
+                                    <h3>Cláusulas</h3>
+                                    <t t-foreach="o.clause_line_ids.sorted(key=lambda l: l.sequence)" t-as="cl">
+                                        <t t-if="cl.selected">
+                                            <div class="mt8">
+                                                <t t-if="cl.title">
+                                                    <p>
+                                                        <strong>
+                                                            <t t-esc="cl.title"/>
+                                                        </strong>
+                                                    </p>
+                                                </t>
+                                                <t t-if="cl.body">
+                                                    <div t-raw="cl.body"/>
+                                                </t>
+                                            </div>
+                                        </t>
+                                    </t>
+                                </t>
+
+                            </p>
+
+                            <p>
+                                El contrato tendra vigencia de
+                                <t t-esc="o.start_date or ''"/>
+                                hasta
+                                <t t-esc="o.end_date or ''"/>
+
+                            </p>
+                            <p>
+                                <strong>Estado:</strong>
+                                <t t-esc="o.state or ''"/>
+                                <strong>Contrato:</strong>
+                                <t t-esc="o.name or ''"/>
+                            </p>
+
+                            <hr/>
+                            <h3>Propiedad</h3>
+                            <p>
+                                <strong>Nombre/ID:</strong>
+                                <t t-esc="o.property_id.name or ''"/>
+                            </p>
+                            <p>
+                                <strong>Dirección:</strong>
+                                <t t-esc="o.property_id.street1 or ''"/>
+                                <t t-esc="(' N° ' + o.property_id.house_number) if o.property_id.house_number else ''"/>
+                                <t t-esc="(', ' + o.property_id.street2) if o.property_id.street2 else ''"/>
+                            </p>
+                            <p>
+                                <strong>Ciudad / Dpto / País:</strong>
+                                <t t-esc="o.property_id.city.name if o.property_id.city else ''"/>
+                                <t t-esc="(', ' + o.property_id.state_id.name) if o.property_id.state_id else ''"/>
+                                <t t-esc="(', ' + o.property_id.country_id.name) if o.property_id.country_id else ''"/>
+                            </p>
+
+                            <t t-if="o.rent_amount">
+                                <p>
+                                    <strong>Monto de alquiler:</strong>
+                                    <t t-esc="o.rent_amount"/>
+                                </p>
+                            </t>
+                            <t t-if="o.currency_id">
+                                <p>
+                                    <strong>Moneda:</strong>
+                                    <t t-esc="o.currency_id.name"/>
+                                </p>
+                            </t>
+
+                            <t t-if="o.property_id.map_address or (o.property_id.geo_latitude and o.property_id.geo_longitude)">
+                                <hr/>
+                                <h3>Ubicación</h3>
+                                <p t-if="o.property_id.map_address">
+                                    <strong>Dirección para mapa:</strong>
+                                    <t t-esc="o.property_id.map_address"/>
+                                </p>
+                                <p t-if="o.property_id.geo_latitude and o.property_id.geo_longitude">
+                                    <strong>Coordenadas:</strong>
+                                    <t t-esc="str(o.property_id.geo_latitude) + ', ' + str(o.property_id.geo_longitude)"/>
+                                </p>
+                            </t>
+                            <t t-esc="o.state or ''"/>
+                            <t t-if="o.property_id.inventory_ids">
+                                <hr/>
+                                <h3>Último inventario</h3>
+                                <t t-set="inv"
+                                   t-value="o.property_id.inventory_ids.sorted(lambda r: r.date, reverse=True)[:1]"/>
+                                <t t-foreach="inv" t-as="i">
+                                    <p>
+                                        <strong>Fecha:</strong>
+                                        <t t-esc="i.date"/>
+                                    </p>
+                                    <p t-if="'paint_state' in i._fields">
+                                        <strong>Pintura:</strong>
+                                        <t t-esc="dict(i._fields['paint_state'].selection).get(i.paint_state, '')"/>
+                                    </p>
+                                    <p t-if="'plumbing_state' in i._fields">
+                                        <strong>Tuberías:</strong>
+                                        <t t-esc="dict(i._fields['plumbing_state'].selection).get(i.plumbing_state, '')"/>
+                                    </p>
+                                    <p t-if="'electrical_state' in i._fields">
+                                        <strong>Inst. eléctrica:</strong>
+                                        <t t-esc="dict(i._fields['electrical_state'].selection).get(i.electrical_state, '')"/>
+                                    </p>
+
+                                    <t t-if="i.line_ids">
+                                        <table class="table table-sm mt16">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ítem</th>
+                                                    <th>Cantidad</th>
+                                                    <th>Condición</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="i.line_ids" t-as="l">
+                                                    <tr>
+                                                        <td>
+                                                            <t t-esc="l.name"/>
+                                                        </td>
+                                                        <td>
+                                                            <t t-esc="l.quantity"/>
+                                                        </td>
+                                                        <td>
+                                                            <t t-esc="dict(l._fields['condition'].selection).get(l.condition, '')"/>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </t>
+                                </t>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>
