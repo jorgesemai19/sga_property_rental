@@ -50,7 +50,7 @@
                                 con las siguientes cláusulas:
                                 <t t-if="o.clause_line_ids">
                                     <hr/>
-                                    <h3>Cláusulas</h3>
+                                    <!--h3>Cláusulas</h3-->
                                     <t t-foreach="o.clause_line_ids.sorted(key=lambda l: l.sequence)" t-as="cl">
                                         <t t-if="cl.selected">
                                             <div class="mt8">
@@ -71,7 +71,7 @@
 
                             </p>
 
-                            <p>
+                            <!--p>
                                 El contrato tendra vigencia de
                                 <t t-esc="o.start_date or ''"/>
                                 hasta
@@ -128,58 +128,93 @@
                                     <strong>Coordenadas:</strong>
                                     <t t-esc="str(o.property_id.geo_latitude) + ', ' + str(o.property_id.geo_longitude)"/>
                                 </p>
-                            </t>
-                            <t t-esc="o.state or ''"/>
-                            <t t-if="o.property_id.inventory_ids">
-                                <hr/>
-                                <h3>Último inventario</h3>
-                                <t t-set="inv"
-                                   t-value="o.property_id.inventory_ids.sorted(lambda r: r.date, reverse=True)[:1]"/>
-                                <t t-foreach="inv" t-as="i">
-                                    <p>
-                                        <strong>Fecha:</strong>
-                                        <t t-esc="i.date"/>
-                                    </p>
-                                    <p t-if="'paint_state' in i._fields">
-                                        <strong>Pintura:</strong>
-                                        <t t-esc="dict(i._fields['paint_state'].selection).get(i.paint_state, '')"/>
-                                    </p>
-                                    <p t-if="'plumbing_state' in i._fields">
-                                        <strong>Tuberías:</strong>
-                                        <t t-esc="dict(i._fields['plumbing_state'].selection).get(i.plumbing_state, '')"/>
-                                    </p>
-                                    <p t-if="'electrical_state' in i._fields">
-                                        <strong>Inst. eléctrica:</strong>
-                                        <t t-esc="dict(i._fields['electrical_state'].selection).get(i.electrical_state, '')"/>
-                                    </p>
+                            </t-->
+                            <!-- BLOQUE DE FIRMAS -->
+                            <div style="margin-top: 60px; margin-bottom: 40px;">
+                                <table style="width: 100%;">
+                                    <tr>
+                                        <td style="width: 33%; text-align: left;">
+                                            <span>------------------------------</span>
+                                            <br/>
+                                            <strong>Propietario</strong>
+                                        </td>
+                                        <td style="width: 33%; text-align: center;">
+                                            <span>------------------------------</span>
+                                            <br/>
+                                            <strong>Codeudor</strong>
+                                        </td>
+                                        <td style="width: 33%; text-align: right;">
+                                            <span>------------------------------</span>
+                                            <br/>
+                                            <strong>Inquilino</strong>
+                                        </td>
+                                    </tr>
+                                </table>
 
-                                    <t t-if="i.line_ids">
-                                        <table class="table table-sm mt16">
-                                            <thead>
-                                                <tr>
-                                                    <th>Ítem</th>
-                                                    <th>Cantidad</th>
-                                                    <th>Condición</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <t t-foreach="i.line_ids" t-as="l">
-                                                    <tr>
-                                                        <td>
-                                                            <t t-esc="l.name"/>
-                                                        </td>
-                                                        <td>
-                                                            <t t-esc="l.quantity"/>
-                                                        </td>
-                                                        <td>
-                                                            <t t-esc="dict(l._fields['condition'].selection).get(l.condition, '')"/>
-                                                        </td>
-                                                    </tr>
-                                                </t>
-                                            </tbody>
-                                        </table>
-                                    </t>
+                                <t t-if="o.agent_id">
+                                    <div style="margin-top: 40px; text-align: center;">
+                                        <span>------------------------------</span>
+                                        <br/>
+                                        <strong>Agente inmobiliario</strong>
+                                        <br/>
+                                        <t t-esc="o.agent_id.display_name"/>
+                                    </div>
                                 </t>
+                            </div>
+
+                            <!-- ANEXO I: Inventario del inmueble en página aparte -->
+                            <t t-if="o.property_id.inventory_ids">
+                                <div style="page-break-before: always;">
+                                    <h3>ANEXO I - Inventario del inmueble</h3>
+
+                                    <t t-set="inv"
+                                       t-value="o.property_id.inventory_ids.sorted(lambda r: r.date, reverse=True)[:1]"/>
+                                    <t t-foreach="inv" t-as="i">
+                                        <p>
+                                            <strong>Fecha:</strong>
+                                            <t t-esc="i.date"/>
+                                        </p>
+                                        <p t-if="'paint_state' in i._fields">
+                                            <strong>Pintura:</strong>
+                                            <t t-esc="dict(i._fields['paint_state'].selection).get(i.paint_state, '')"/>
+                                        </p>
+                                        <p t-if="'plumbing_state' in i._fields">
+                                            <strong>Tuberías:</strong>
+                                            <t t-esc="dict(i._fields['plumbing_state'].selection).get(i.plumbing_state, '')"/>
+                                        </p>
+                                        <p t-if="'electrical_state' in i._fields">
+                                            <strong>Inst. eléctrica:</strong>
+                                            <t t-esc="dict(i._fields['electrical_state'].selection).get(i.electrical_state, '')"/>
+                                        </p>
+
+                                        <t t-if="i.line_ids">
+                                            <table class="table table-sm mt16">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Ítem</th>
+                                                        <th>Cantidad</th>
+                                                        <th>Condición</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="i.line_ids" t-as="l">
+                                                        <tr>
+                                                            <td>
+                                                                <t t-esc="l.name"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="l.quantity"/>
+                                                            </td>
+                                                            <td>
+                                                                <t t-esc="dict(l._fields['condition'].selection).get(l.condition, '')"/>
+                                                            </td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </t>
+                                    </t>
+                                </div>
                             </t>
                         </div>
                     </t>

@@ -48,6 +48,12 @@
                                 string="Agregar cláusula"
                                 class="btn-link"/>
 
+                        <button name="action_refresh_clauses"
+                                type="object"
+                                string="Refrescar cláusulas"
+                                class="btn-secondary"
+                                invisible="not clause_line_ids"/>
+
                     </header>
                     <sheet>
                         <group>
@@ -64,6 +70,7 @@
                         <group>
                             <field name="rent_amount"/>
                             <field name="deposit_amount"/>
+                            <field name="penalty_amount"/>
                             <field name="currency_id" groups="base.group_no_one"/>
                         </group>
                         <notebook>
@@ -114,8 +121,9 @@
                                         </group>
                                         <group string="Texto de la cláusula">
                                             <field name="body" widget="html"
-                                                   attrs="{'readonly': [('template_editable','=',False)]}"/>
+                                                   readonly="not template_editable"/>
                                         </group>
+
                                     </form>
                                 </field>
                             </page>

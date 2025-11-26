@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 from odoo.tools import html2plaintext
+from num2words import num2words
 
 
 class RentalContractClauseLine(models.Model):
@@ -53,10 +54,19 @@ class RentalContractClauseLine(models.Model):
     @api.onchange("template_id")
     def _onchange_template_id(self):
         for line in self:
-            if line.template_id:
-                line.title = line.template_id.name
-                line.body = line.template_id.body or ""
-            # Si se borra la plantilla, dejamos lo que ya escribió
+            if not line.template_id:
+                continue
+
+            line.title = line.template_id.name
+            template_body = line.template_id.body or ""
+
+            if line.contract_id:
+                # Reemplaza placeholders con datos de ESTE contrato
+                line.body = line.contract_id._render_clause_body(template_body)
+            else:
+                # Si por alguna razón aún no está ligado a un contrato
+                line.body = template_body
+
 
 class RentalContract(models.Model):
     _name = "rental.contract"
@@ -74,10 +84,11 @@ class RentalContract(models.Model):
     end_date = fields.Date("Fecha fin")
     day_due = fields.Integer("Día de vencimiento (1-28)", required=True, default=5)
     rent_amount = fields.Monetary("Monto mensual", currency_field="currency_id", required=True)
+    penalty_amount = fields.Monetary("Multa", currency_field="currency_id", required=True)
     deposit_amount = fields.Monetary("Monto garantía", currency_field="currency_id", default=0.0)
     currency_id = fields.Many2one("res.currency", "Moneda", default=lambda self: self.env.company.currency_id)
     state = fields.Selection(
-        [("draft","Borrador"),("active","Activo"),("closed","Cerrado"),("cancel","Cancelado")],
+        [("draft", "Borrador"), ("active", "Activo"), ("closed", "Cerrado"), ("cancel", "Cancelado")],
         default="draft"
     )
     company_id = fields.Many2one("res.company", default=lambda self: self.env.company)
@@ -124,23 +135,31 @@ class RentalContract(models.Model):
         """Carga plantillas marcadas como is_default y no duplica títulos ya cargados."""
         for rec in self:
             Clause = self.env["rental.clause"].sudo()
-            defaults = Clause.search([("is_default", "=", True), ("active", "=", True)], order="sequence, name")
-            # para evitar duplicar por título
+            defaults = Clause.search(
+                [("is_default", "=", True), ("active", "=", True)],
+                order="sequence, name"
+            )
             existing_titles = set(t for t in rec.clause_line_ids.mapped("title") if t)
             vals_list = []
             seq = 10
             for tpl in defaults:
                 if tpl.name in existing_titles:
                     continue
+
+                template_body = tpl.body or ""
+                # 👉 AQUÍ usamos el helper para inyectar monto, fechas, multa, etc.
+                rendered_body = rec._render_clause_body(template_body)
+
                 vals_list.append({
                     "contract_id": rec.id,
                     "sequence": seq,
                     "selected": True,
                     "title": tpl.name,
-                    "body": tpl.body or "",
+                    "body": rendered_body,
                     "template_id": tpl.id,
                 })
                 seq += 10
+
             if vals_list:
                 self.env["rental.contract.clause.line"].create(vals_list)
         return True
@@ -171,27 +190,188 @@ class RentalContract(models.Model):
 
     def cron_generate_monthly_rents(self):
         today = fields.Date.context_today(self)
-        contracts = self.search([("state","=","active"), ("start_date","<=",today)])
+        contracts = self.search([("state", "=", "active"), ("start_date", "<=", today)])
         for c in contracts:
             if c.end_date and c.end_date < today:
                 continue
             first_day = date(today.year, today.month, 1)
             last_day = first_day + relativedelta(months=1, days=-1)
             existing = self.env["account.move"].search_count([
-                ("rental_contract_id","=",c.id),
-                ("move_type","=","out_invoice"),
-                ("invoice_date",">=",first_day),
-                ("invoice_date","<=",last_day),
-                ("state","in",["draft","posted"]),
+                ("rental_contract_id", "=", c.id),
+                ("move_type", "=", "out_invoice"),
+                ("invoice_date", ">=", first_day),
+                ("invoice_date", "<=", last_day),
+                ("state", "in", ["draft", "posted"]),
             ])
             if existing:
                 continue
             inv_date = c._next_period_invoice_date(today)
             if inv_date < c.start_date:
                 continue
-            c._create_out_invoice(amount=c.rent_amount, description=_("Alquiler mensual %s") % inv_date.strftime("%Y-%m"))
+            c._create_out_invoice(amount=c.rent_amount,
+                                  description=_("Alquiler mensual %s") % inv_date.strftime("%Y-%m"))
 
     # --- Reporte
     def action_print_full_pdf(self):
         self.ensure_one()
         return self.env.ref("sga_property_rental.report_contract_full").report_action(self)
+
+    """def _amount_to_text_es(self, amount, currency_name=None):
+        COMENTARIO: Convierte un monto numérico a texto en español, opcionalmente con nombre de moneda.
+        self.ensure_one()
+        if not amount:
+            return ""
+
+        # Redondeamos al entero (para contratos suele ser sin decimales)
+        integer = int(round(float(amount)))
+
+        # Texto en español: "un millón doscientos mil"
+        words = num2words(integer, lang="es")
+
+        # Nombre de moneda: usamos el nombre de la moneda del contrato si no se pasa
+        if currency_name is None:
+            currency_name = (self.currency_id and self.currency_id.name) or ""
+
+        currency_name = (currency_name or "").strip()
+        if currency_name:
+            return f"{words} {currency_name.lower()}"
+        return words"""
+
+    def _amount_to_text_es(self, amount, currency_name=None):
+        """Convierte un monto numérico a texto en español (sin nombre de moneda)."""
+        self.ensure_one()
+        if not amount:
+            return ""
+
+        integer = int(round(float(amount)))
+        # Ej: "un millón doscientos mil"
+        words = num2words(integer, lang="es")
+        return words
+
+    def _render_clause_body(self, template_body):
+        """Reemplaza placeholders {{...}} del cuerpo de la cláusula con datos del contrato."""
+        self.ensure_one()
+        body = template_body or ""
+
+        # ===== Fechas =====
+        start_str = ""
+        end_str = ""
+        if self.start_date:
+            start_str = self.start_date.strftime("%d/%m/%Y")
+        if self.end_date:
+            end_str = self.end_date.strftime("%d/%m/%Y")
+
+        # ===== Monto de alquiler =====
+        rent_str = ""
+        rent_text = ""
+        rent_full = ""
+        if self.rent_amount:
+            symbol = (self.currency_id and self.currency_id.symbol) or "Gs"
+            amount = float(self.rent_amount)
+            rent_str = ("%s %s" % (symbol, "{:,.0f}".format(amount))).replace(",", ".")
+            # Si tenés _amount_to_text_es, lo usamos
+            try:
+                rent_text = self._amount_to_text_es(self.rent_amount)
+            except Exception:
+                rent_text = ""
+            if rent_str and rent_text:
+                rent_full = f"{rent_str} ({rent_text})"
+            else:
+                rent_full = rent_str or rent_text
+
+        # ===== Multa diaria =====
+        penalty_str = ""
+        penalty_text = ""
+        penalty_full = ""
+        if getattr(self, "penalty_amount", False):
+            symbol = (self.currency_id and self.currency_id.symbol) or "Gs"
+            amount = float(self.penalty_amount)
+            penalty_str = ("%s %s" % (symbol, "{:,.0f}".format(amount))).replace(",", ".")
+            try:
+                penalty_text = self._amount_to_text_es(self.penalty_amount)
+            except Exception:
+                penalty_text = ""
+            if penalty_str and penalty_text:
+                penalty_full = f"{penalty_str} ({penalty_text})"
+            else:
+                penalty_full = penalty_str or penalty_text
+
+        # ===== Depósito =====
+        deposit_str = ""
+        deposit_text = ""
+        deposit_full = ""
+        if getattr(self, "deposit_amount", False):
+            symbol = (self.currency_id and self.currency_id.symbol) or "Gs"
+            amount = float(self.deposit_amount)
+            deposit_str = ("%s %s" % (symbol, "{:,.0f}".format(amount))).replace(",", ".")
+            try:
+                deposit_text = self._amount_to_text_es(self.deposit_amount)
+            except Exception:
+                deposit_text = ""
+            if deposit_str and deposit_text:
+                deposit_full = f"{deposit_str} ({deposit_text})"
+            else:
+                deposit_full = deposit_str or deposit_text
+
+        # ===== Datos del agente inmobiliario =====
+        agent_name = ""
+        agent_vat = ""
+        agent_phone = ""
+        agent_email = ""
+        agent_full = ""
+
+        if getattr(self, "agent_id", False) and self.agent_id:
+            agent_name = self.agent_id.display_name or ""
+            agent_vat = self.agent_id.vat or ""
+            agent_phone = self.agent_id.mobile or self.agent_id.phone or ""
+            agent_email = self.agent_id.email or ""
+
+            parts = []
+            if agent_name:
+                parts.append(agent_name)
+            if agent_vat:
+                parts.append("con C.I./RUC N° %s" % agent_vat)
+            if agent_phone:
+                parts.append("tel. %s" % agent_phone)
+            if agent_email:
+                parts.append("email %s" % agent_email)
+
+            agent_full = ", ".join(parts)
+
+        # ===== Diccionario de placeholders =====
+        placeholders = {
+            "{{START_DATE}}": start_str,
+            "{{END_DATE}}": end_str,
+
+            "{{RENT_AMOUNT}}": rent_str,
+            "{{RENT_AMOUNT_TEXT}}": rent_text,
+            "{{RENT_AMOUNT_FULL}}": rent_full,
+
+            "{{PENALTY_AMOUNT}}": penalty_str,
+            "{{PENALTY_AMOUNT_TEXT}}": penalty_text,
+            "{{PENALTY_AMOUNT_FULL}}": penalty_full,
+
+            "{{DEPOSIT_AMOUNT}}": deposit_str,
+            "{{DEPOSIT_AMOUNT_TEXT}}": deposit_text,
+            "{{DEPOSIT_AMOUNT_FULL}}": deposit_full,
+
+            "{{AGENT_NAME}}": agent_name,
+            "{{AGENT_VAT}}": agent_vat,
+            "{{AGENT_PHONE}}": agent_phone,
+            "{{AGENT_EMAIL}}": agent_email,
+            "{{AGENT_FULL}}": agent_full,
+        }
+
+        for key, value in placeholders.items():
+            body = body.replace(key, value or "")
+
+        return body
+
+    def action_refresh_clauses(self):
+        """Vuelve a generar el texto de las cláusulas desde la plantilla + datos actuales del contrato."""
+        for rec in self:
+            for line in rec.clause_line_ids:
+                if line.template_id:
+                    template_body = line.template_id.body or ""
+                    line.body = rec._render_clause_body(template_body)
+        return True
