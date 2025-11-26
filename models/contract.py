@@ -3,21 +3,60 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+from odoo.tools import html2plaintext
 
-# === NUEVO: líneas de cláusulas por contrato ===
+
 class RentalContractClauseLine(models.Model):
     _name = "rental.contract.clause.line"
     _description = "Cláusula en contrato"
     _order = "sequence, id"
 
-    contract_id = fields.Many2one("rental.contract", string="Contrato", required=True, ondelete="cascade")
+    contract_id = fields.Many2one(
+        "rental.contract",
+        string="Contrato",
+        required=True,
+        ondelete="cascade",
+    )
     sequence = fields.Integer(string="Orden", default=10)
     selected = fields.Boolean(string="Incluir", default=True)
     title = fields.Char(string="Título")
     body = fields.Html(string="Texto", sanitize=True)
-    # guarda referencia a la plantilla para saber si es editable
+
     template_id = fields.Many2one("rental.clause", string="Plantilla")
-    template_editable = fields.Boolean(string="Editable por plantilla", related="template_id.is_editable", store=False)
+    template_editable = fields.Boolean(
+        string="Editable por plantilla",
+        related="template_id.is_editable",
+        store=False,
+    )
+
+    # 👇 NUEVO: preview de texto para mostrar en el árbol
+    body_preview = fields.Text(
+        string="Vista previa",
+        compute="_compute_body_preview",
+        store=False,
+    )
+
+    @api.depends("body")
+    def _compute_body_preview(self):
+        for line in self:
+            if line.body:
+                # Pasamos HTML → texto plano
+                text = html2plaintext(line.body) or ""
+                text = text.strip().replace("\n", " ")
+                # Recortamos a 120 caracteres (ajustable)
+                if len(text) > 120:
+                    text = text[:120] + "..."
+                line.body_preview = text
+            else:
+                line.body_preview = False
+
+    @api.onchange("template_id")
+    def _onchange_template_id(self):
+        for line in self:
+            if line.template_id:
+                line.title = line.template_id.name
+                line.body = line.template_id.body or ""
+            # Si se borra la plantilla, dejamos lo que ya escribió
 
 class RentalContract(models.Model):
     _name = "rental.contract"
