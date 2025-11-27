@@ -47,10 +47,6 @@
                   parent="menu_rental_root"
                   action="action_rental_clause"
                   sequence="35"/>
-        <menuitem id="menu_rental_report"
-                  name="Reportes"
-                  parent="menu_rental_root"
-                  action="action_rental_report"
-                  sequence="40"/>
+
     </data>
 </odoo>

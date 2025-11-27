@@ -18,9 +18,9 @@
         "views/contract_views.xml",
         "views/visit_views.xml",
         "views/account_move_views.xml",
-        "views/clause_form_views.xml",   # aquí se define action_rental_clause
-        "views/report_views.xml",
-        "views/menu.xml",                # aquí se usa action_rental_clause
+        "views/clause_form_views.xml",  # aquí se define action_rental_clause
+        "views/report_account_views.xml",
+        "views/menu.xml",  # aquí se usa action_rental_clause
         "views/contract_report.xml",
         "views/schedule_client_views.xml",
         "views/website_product_extra_button.xml",

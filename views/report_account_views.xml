@@ -1,0 +1,260 @@
+<odoo>
+    <data>
+
+        <!-- Menú raíz "Reportes" de la inmobiliaria -->
+        <!-- Si da error de parent, sacá la línea parent="..." -->
+        <menuitem id="menu_rental_reports_root"
+                  name="Reportes"
+                  parent="sga_property_rental.menu_rental_root"
+                  sequence="50"/>
+        <!-- Si tu menu_rental_root no existe o da error, usá:
+        <menuitem id="menu_rental_reports_root"
+                  name="Reportes"
+                  sequence="50"/>
+        -->
+
+        <!-- ========================================================= -->
+        <!-- COBRADO: facturas de cliente (out_invoice) pagadas        -->
+        <!-- ========================================================= -->
+        <record id="action_rental_report_cobrado" model="ir.actions.act_window">
+            <field name="name">Cobrado</field>
+            <field name="res_model">account.move</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">
+                [('move_type','=','out_invoice'),
+                 ('state','=','posted'),
+                 ('payment_state','=','paid')]
+            </field>
+        </record>
+
+        <menuitem id="menu_rental_report_cobrado"
+                  name="Cobrado"
+                  parent="menu_rental_reports_root"
+                  action="action_rental_report_cobrado"
+                  sequence="10"/>
+
+        <!-- ========================================================= -->
+        <!-- A COBRAR: facturas de cliente no pagadas / parciales      -->
+        <!-- ========================================================= -->
+        <record id="action_rental_report_a_cobrar" model="ir.actions.act_window">
+            <field name="name">A cobrar</field>
+            <field name="res_model">account.move</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">
+                [('move_type','=','out_invoice'),
+                 ('state','=','posted'),
+                 ('payment_state','in',('not_paid','partial'))]
+            </field>
+        </record>
+
+        <menuitem id="menu_rental_report_a_cobrar"
+                  name="A cobrar"
+                  parent="menu_rental_reports_root"
+                  action="action_rental_report_a_cobrar"
+                  sequence="20"/>
+
+        <!-- ========================================================= -->
+        <!-- PAGADO: facturas de proveedor pagadas (lo ya pagado)      -->
+        <!-- ========================================================= -->
+        <record id="action_rental_report_pagado" model="ir.actions.act_window">
+            <field name="name">Pagado</field>
+            <field name="res_model">account.move</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">
+                [('move_type','=','in_invoice'),
+                 ('state','=','posted'),
+                 ('payment_state','=','paid')]
+            </field>
+        </record>
+
+        <menuitem id="menu_rental_report_pagado"
+                  name="Pagado"
+                  parent="menu_rental_reports_root"
+                  action="action_rental_report_pagado"
+                  sequence="30"/>
+
+        <!-- ========================================================= -->
+        <!-- A PAGAR: facturas de proveedor no pagadas / parciales     -->
+        <!-- ========================================================= -->
+        <record id="action_rental_report_a_pagar" model="ir.actions.act_window">
+            <field name="name">A pagar</field>
+            <field name="res_model">account.move</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">
+                [('move_type','=','in_invoice'),
+                 ('state','=','posted'),
+                 ('payment_state','in',('not_paid','partial'))]
+            </field>
+        </record>
+
+        <menuitem id="menu_rental_report_a_pagar"
+                  name="A pagar"
+                  parent="menu_rental_reports_root"
+                  action="action_rental_report_a_pagar"
+                  sequence="40"/>
+
+        <!-- ========================================================= -->
+        <!-- SALDO TOTAL: pivot con saldos pendientes                  -->
+        <!-- ========================================================= -->
+        <record id="action_rental_report_saldo_total" model="ir.actions.act_window">
+            <field name="name">Saldo total</field>
+            <field name="res_model">account.move</field>
+            <field name="view_mode">pivot,list</field>
+            <field name="domain">
+                [('state','=','posted'),
+                 ('payment_state','!=','paid')]
+            </field>
+        </record>
+
+        <menuitem id="menu_rental_report_saldo_total"
+                  name="Saldo total"
+                  parent="menu_rental_reports_root"
+                  action="action_rental_report_saldo_total"
+                  sequence="50"/>
+
+        <!-- ========================================================= -->
+        <!-- REPORTE PARA PAGO A CLIENTES (propietarios)               -->
+        <!-- ========================================================= -->
+        <record id="action_rental_report_pago_clientes" model="ir.actions.act_window">
+            <field name="name">Pago a clientes</field>
+            <field name="res_model">account.move</field>
+            <field name="view_mode">pivot,list</field>
+            <field name="domain">
+                [('move_type','=','in_invoice'),
+                 ('state','=','posted'),
+                 ('payment_state','in',('not_paid','partial'))]
+            </field>
+        </record>
+
+        <menuitem id="menu_rental_report_pago_clientes"
+                  name="Pago a clientes"
+                  parent="menu_rental_reports_root"
+                  action="action_rental_report_pago_clientes"
+                  sequence="60"/>
+
+        <!-- ========================================================= -->
+        <!-- REPORTE DE AGENTES: contratos y montos por agente         -->
+        <!-- ========================================================= -->
+
+        <!-- Vista lista específica para el reporte de agentes -->
+        <record id="view_rental_contract_report_agent_list" model="ir.ui.view">
+            <field name="name">rental.contract.report.agent.list</field>
+            <field name="model">rental.contract</field>
+            <field name="arch" type="xml">
+                <list string="Contratos por agente">
+                    <field name="name"/>
+                    <field name="agent_id"/>
+                    <field name="property_id"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                    <field name="rent_amount"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Vista pivot para ver totales por agente -->
+        <record id="view_rental_contract_report_agent_pivot" model="ir.ui.view">
+            <field name="name">rental.contract.report.agent.pivot</field>
+            <field name="model">rental.contract</field>
+            <field name="arch" type="xml">
+                <pivot string="Reporte de agentes">
+                    <!-- Filas: agentes -->
+                    <field name="agent_id" type="row"/>
+                    <!-- Columnas opcionales: propiedad -->
+                    <field name="property_id" type="col"/>
+                    <!-- Medida: total de alquiler mensual -->
+                    <field name="rent_amount" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- Acción del reporte de agentes -->
+        <record id="action_rental_report_agentes" model="ir.actions.act_window">
+            <field name="name">Reporte de agentes</field>
+            <field name="res_model">rental.contract</field>
+            <field name="view_mode">pivot,list</field>
+            <field name="views" eval="[
+                (ref('sga_property_rental.view_rental_contract_report_agent_pivot'), 'pivot'),
+                (ref('sga_property_rental.view_rental_contract_report_agent_list'), 'list')
+            ]"/>
+            <field name="domain">[('state','!=','cancel')]</field>
+        </record>
+
+        <!-- Menú dentro de Reportes -->
+        <menuitem id="menu_rental_report_agentes"
+                  name="Agentes"
+                  parent="menu_rental_reports_root"
+                  action="action_rental_report_agentes"
+                  sequence="70"/>
+
+        <!-- ========================================================= -->
+        <!-- REPORTE: Contratos por fecha de vencimiento              -->
+        <!-- ========================================================= -->
+
+        <!-- Lista para el reporte de vencimientos -->
+        <record id="view_rental_contract_report_expiring_list" model="ir.ui.view">
+            <field name="name">rental.contract.report.expiring.list</field>
+            <field name="model">rental.contract</field>
+            <field name="arch" type="xml">
+                <list string="Contratos por fecha de vencimiento">
+                    <field name="name"/>
+                    <field name="property_id"/>
+                    <field name="tenant_id"/>
+                    <field name="agent_id"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                    <field name="rent_amount"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Search view con filtros de Vigentes / Vencidos -->
+        <record id="view_rental_contract_report_expiring_search" model="ir.ui.view">
+            <field name="name">rental.contract.report.expiring.search</field>
+            <field name="model">rental.contract</field>
+            <field name="arch" type="xml">
+                <search string="Buscar contratos">
+                    <field name="name"/>
+                    <field name="property_id"/>
+                    <field name="tenant_id"/>
+                    <field name="agent_id"/>
+
+                    <filter name="vigentes"
+                            string="Vigentes"
+                            domain="[('end_date','>=', context_today())]"/>
+
+                    <filter name="vencidos"
+                            string="Vencidos"
+                            domain="[('end_date','!=', False), ('end_date','&lt;', context_today())]"/>
+
+                    <group expand="0" string="Agrupar por">
+                        <filter name="group_agent" string="Agente" context="{'group_by': 'agent_id'}"/>
+                        <filter name="group_property" string="Propiedad" context="{'group_by': 'property_id'}"/>
+                        <filter name="group_end_date" string="Fecha de fin" context="{'group_by': 'end_date'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Acción del reporte de vencimientos -->
+        <record id="action_rental_report_contratos_vencimiento" model="ir.actions.act_window">
+            <field name="name">Contratos por vencimiento</field>
+            <field name="res_model">rental.contract</field>
+            <field name="view_mode">list</field>
+            <field name="views" eval="[
+                (ref('sga_property_rental.view_rental_contract_report_expiring_list'), 'list')
+            ]"/>
+            <field name="search_view_id" ref="sga_property_rental.view_rental_contract_report_expiring_search"/>
+        </record>
+
+        <!-- Menú dentro de Reportes -->
+        <menuitem id="menu_rental_report_contratos_vencimiento"
+                  name="Contratos por vencimiento"
+                  parent="menu_rental_reports_root"
+                  action="action_rental_report_contratos_vencimiento"
+                  sequence="80"/>
+
+    </data>
+</odoo>
