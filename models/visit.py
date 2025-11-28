@@ -98,9 +98,8 @@ class RentalVisit(models.Model):
     )
     contract_id = fields.Many2one(
         "rental.contract",
-        string="Contrato relacionado (opcional)",
+        string="Contrato relacionado",
         domain="[('property_id', '=', property_id)]",
-        required=False,
     )
     agent_id = fields.Many2one(
         "res.partner",
