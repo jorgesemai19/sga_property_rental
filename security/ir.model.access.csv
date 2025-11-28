@@ -14,3 +14,4 @@ rental_building_user,building user,model_rental_building,group_rental_user,1,1,1
 rental_building_manager,building manager,model_rental_building,group_rental_manager,1,1,1,1
 access_rental_clause_user,access.rental.clause.user,model_rental_clause,base.group_user,1,0,0,0
 access_rental_clause_manager,access.rental.clause.manager,model_rental_clause,group_rental_manager,1,1,1,1
+access_rental_visit_slot_user,rental.visit.slot user,model_rental_visit_slot,base.group_user,1,1,1,1

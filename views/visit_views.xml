@@ -1,45 +1,236 @@
 <odoo>
-  <data>
-    <!-- LISTA (v18) -->
-    <record id="view_rental_visit_list" model="ir.ui.view">
-      <field name="name">rental.visit.list</field>
-      <field name="model">rental.visit</field>
-      <field name="arch" type="xml">
-        <list>
-          <field name="date"/>
-          <field name="property_id"/>
-          <field name="agent_id"/>
-          <field name="interested_partner_id"/>
-        </list>
-      </field>
-    </record>
+    <data>
 
-    <!-- FORM -->
-    <record id="view_rental_visit_form" model="ir.ui.view">
-      <field name="name">rental.visit.form</field>
-      <field name="model">rental.visit</field>
-      <field name="arch" type="xml">
-        <form>
-          <sheet>
-            <group>
-              <field name="date"/>
-              <field name="property_id"/>
-              <field name="agent_id"/>
-              <field name="interested_partner_id"/>
-            </group>
-            <group>
-              <field name="notes"/>
-            </group>
-          </sheet>
-        </form>
-      </field>
-    </record>
+        <!-- ========================= -->
+        <!-- Menú raíz de Visitas      -->
+        <!-- ========================= -->
 
-    <!-- Acción: usar list,form -->
-    <record id="action_rental_visit" model="ir.actions.act_window">
-      <field name="name">Visitas</field>
-      <field name="res_model">rental.visit</field>
-      <field name="view_mode">list,form</field>
-    </record>
-  </data>
+        <menuitem id="menu_rental_visits_root"
+                  name="Visitas"
+                  parent="sga_property_rental.menu_rental_root"
+                  sequence="40"/>
+
+        <!-- ========================= -->
+        <!-- MODELO: rental.visit      -->
+        <!-- ========================= -->
+
+        <!-- Lista de visitas -->
+        <record id="view_rental_visit_tree" model="ir.ui.view">
+            <field name="name">rental.visit.tree</field>
+            <field name="model">rental.visit</field>
+            <field name="arch" type="xml">
+                <list string="Visitas">
+                    <field name="name"/>
+                    <field name="property_id"/>
+                    <field name="customer_id"/>
+                    <field name="agent_id"/>
+                    <field name="start_datetime"/>
+                    <field name="end_datetime"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Formulario de visitas (SIN contrato relacionado) -->
+        <record id="view_rental_visit_form" model="ir.ui.view">
+            <field name="name">rental.visit.form</field>
+            <field name="model">rental.visit</field>
+            <field name="arch" type="xml">
+                <form string="Visita">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="property_id"/>
+                                <field name="customer_id"/>
+                                <field name="agent_id"/>
+                                <field name="slot_id"/>
+                            </group>
+                            <group>
+                                <field name="start_datetime" readonly="1"/>
+                                <field name="end_datetime" readonly="1"/>
+                                <field name="state" widget="statusbar"/>
+                            </group>
+                        </group>
+                        <group string="Notas">
+                            <field name="notes"/>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <!-- Botones según estado -->
+                        <button name="action_confirm"
+                                string="Confirmar"
+                                type="object"
+                                class="btn-primary"
+                                invisible="state != 'requested'"/>
+
+                        <button name="action_mark_done"
+                                string="Marcar como realizada"
+                                type="object"
+                                invisible="state != 'confirmed'"/>
+
+                        <button name="action_cancel"
+                                string="Cancelar"
+                                type="object"
+                                class="btn-secondary"
+                                invisible="state not in ['requested','confirmed']"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search view de visitas -->
+        <record id="view_rental_visit_search" model="ir.ui.view">
+            <field name="name">rental.visit.search</field>
+            <field name="model">rental.visit</field>
+            <field name="arch" type="xml">
+                <search string="Buscar visitas">
+                    <field name="name"/>
+                    <field name="property_id"/>
+                    <field name="customer_id"/>
+                    <field name="agent_id"/>
+
+                    <filter name="requested" string="Solicitadas"
+                            domain="[('state','=','requested')]"/>
+                    <filter name="confirmed" string="Confirmadas"
+                            domain="[('state','=','confirmed')]"/>
+                    <filter name="future" string="Futuras"
+                            domain="[('start_datetime','>=', context_today())]"/>
+
+                    <group expand="0" string="Agrupar por">
+                        <filter name="group_agent" string="Agente"
+                                context="{'group_by': 'agent_id'}"/>
+                        <filter name="group_property" string="Propiedad"
+                                context="{'group_by': 'property_id'}"/>
+                        <filter name="group_state" string="Estado"
+                                context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Acción principal de visitas (todas) -->
+        <record id="action_rental_visits_all" model="ir.actions.act_window">
+            <field name="name">Visitas</field>
+            <field name="res_model">rental.visit</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="sga_property_rental.view_rental_visit_search"/>
+        </record>
+
+        <!-- Menú de visitas confirmadas -->
+        <record id="action_rental_visits_confirmed" model="ir.actions.act_window">
+            <field name="name">Visitas confirmadas</field>
+            <field name="res_model">rental.visit</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state','=','confirmed')]</field>
+            <field name="search_view_id" ref="sga_property_rental.view_rental_visit_search"/>
+        </record>
+
+        <menuitem id="menu_rental_visits_confirmed"
+                  name="Visitas confirmadas"
+                  parent="menu_rental_visits_root"
+                  action="action_rental_visits_confirmed"
+                  sequence="10"/>
+
+        <!-- Menú para ver todas las visitas -->
+        <menuitem id="menu_rental_visits_all"
+                  name="Todas las visitas"
+                  parent="menu_rental_visits_root"
+                  action="action_rental_visits_all"
+                  sequence="20"/>
+
+        <!-- ========================= -->
+        <!-- MODELO: rental.visit.slot -->
+        <!-- ========================= -->
+
+        <!-- Lista de franjas horarias -->
+        <record id="view_rental_visit_slot_tree" model="ir.ui.view">
+            <field name="name">rental.visit.slot.tree</field>
+            <field name="model">rental.visit.slot</field>
+            <field name="arch" type="xml">
+                <list string="Disponibilidad de horarios">
+                    <field name="name"/>
+                    <field name="property_id"/>
+                    <field name="agent_id"/>
+                    <field name="start_datetime"/>
+                    <field name="end_datetime"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Formulario de franjas horarias -->
+        <record id="view_rental_visit_slot_form" model="ir.ui.view">
+            <field name="name">rental.visit.slot.form</field>
+            <field name="model">rental.visit.slot</field>
+            <field name="arch" type="xml">
+                <form string="Franja horaria">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="property_id"/>
+                                <field name="agent_id"/>
+                            </group>
+                            <group>
+                                <field name="start_datetime"/>
+                                <field name="end_datetime"/>
+                                <field name="state"/>
+                            </group>
+                        </group>
+                        <group string="Visita asociada">
+                            <field name="visit_id"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vista CALENDARIO para la agenda del agente -->
+        <record id="view_rental_visit_slot_calendar" model="ir.ui.view">
+            <field name="name">rental.visit.slot.calendar</field>
+            <field name="model">rental.visit.slot</field>
+            <field name="arch" type="xml">
+                <calendar string="Agenda del agente"
+                          date_start="start_datetime"
+                          date_stop="end_datetime">
+                    <field name="name"/>
+                    <field name="agent_id"/>
+                    <field name="property_id"/>
+                </calendar>
+            </field>
+        </record>
+
+        <!-- Acción: lista + formulario (disponibilidad) -->
+        <record id="action_rental_visit_slots" model="ir.actions.act_window">
+            <field name="name">Disponibilidad de horario</field>
+            <field name="res_model">rental.visit.slot</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <!-- Acción: agenda en calendario -->
+        <record id="action_rental_visit_slots_calendar" model="ir.actions.act_window">
+            <field name="name">Agenda (calendario)</field>
+            <field name="res_model">rental.visit.slot</field>
+            <field name="view_mode">calendar,list,form</field>
+            <field name="views" eval="[
+                (ref('sga_property_rental.view_rental_visit_slot_calendar'), 'calendar'),
+                (ref('sga_property_rental.view_rental_visit_slot_tree'), 'list'),
+                (ref('sga_property_rental.view_rental_visit_slot_form'), 'form')
+            ]"/>
+        </record>
+
+        <!-- Menú: disponibilidad en lista -->
+        <menuitem id="menu_rental_visit_slots"
+                  name="Disponibilidad de horario"
+                  parent="menu_rental_visits_root"
+                  action="action_rental_visit_slots"
+                  sequence="30"/>
+
+        <!-- Menú: agenda en calendario -->
+        <menuitem id="menu_rental_visit_slots_calendar"
+                  name="Agenda (calendario)"
+                  parent="menu_rental_visits_root"
+                  action="action_rental_visit_slots_calendar"
+                  sequence="40"/>
+
+    </data>
 </odoo>

@@ -34,19 +34,16 @@
                   action="action_rental_contract"
                   sequence="20"/>
 
-        <!-- Visitas (esta acción la definimos en visit_views.xml) -->
-        <menuitem id="menu_rental_visit"
-                  name="Visitas"
-                  parent="menu_rental_root"
-                  action="action_rental_visit"
-                  sequence="30"/>
-
         <!-- Clausulas de contratos (esta acción la definimos en clause_form_views.xml) -->
         <menuitem id="menu_rental_clause"
                   name="Clausulas"
                   parent="menu_rental_root"
                   action="action_rental_clause"
                   sequence="35"/>
+
+
+
+
 
     </data>
 </odoo>
