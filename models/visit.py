@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
+
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
@@ -60,14 +62,20 @@ class RentalVisitSlot(models.Model):
                 parts.append(slot.property_id.name or "")
             if slot.agent_id:
                 parts.append("Agente: %s" % (slot.agent_id.name,))
+
+            # ⚠️ Convertimos de UTC a la zona horaria del usuario
             if slot.start_datetime:
-                parts.append(
-                    slot.start_datetime.strftime("%d/%m/%Y %H:%M")
+                start_local = fields.Datetime.context_timestamp(
+                    slot, slot.start_datetime
                 )
+                parts.append(start_local.strftime("%d/%m/%Y %H:%M"))
+
             if slot.end_datetime:
-                parts.append(
-                    "→ %s" % slot.end_datetime.strftime("%H:%M")
+                end_local = fields.Datetime.context_timestamp(
+                    slot, slot.end_datetime
                 )
+                parts.append("→ %s" % end_local.strftime("%H:%M"))
+
             slot.name = " - ".join([p for p in parts if p])
 
     @api.depends("state")
@@ -78,7 +86,11 @@ class RentalVisitSlot(models.Model):
     @api.constrains("start_datetime", "end_datetime")
     def _check_datetimes(self):
         for slot in self:
-            if slot.start_datetime and slot.end_datetime and slot.end_datetime <= slot.start_datetime:
+            if (
+                slot.start_datetime
+                and slot.end_datetime
+                and slot.end_datetime <= slot.start_datetime
+            ):
                 raise ValidationError(
                     _("La hora de fin debe ser posterior a la hora de inicio.")
                 )
@@ -115,18 +127,19 @@ class RentalVisit(models.Model):
         "rental.visit.slot",
         string="Franja horaria",
         required=True,
-        domain="[('property_id', '=', property_id), ('agent_id', '=', agent_id), ('state', 'in', ('available', 'reserved'))]",
+        domain="[('property_id', '=', property_id), "
+               "('agent_id', '=', agent_id), "
+               "('state', 'in', ('available', 'reserved'))]",
     )
 
+    # AHORA: campos propios, no relacionados al slot
     start_datetime = fields.Datetime(
         string="Inicio",
-        related="slot_id.start_datetime",
-        store=True,
+        required=True,
     )
     end_datetime = fields.Datetime(
         string="Fin",
-        related="slot_id.end_datetime",
-        store=True,
+        required=True,
     )
 
     state = fields.Selection(
@@ -152,40 +165,117 @@ class RentalVisit(models.Model):
             if visit.customer_id:
                 parts.append("(%s)" % visit.customer_id.name)
             if visit.start_datetime:
-                parts.append(
-                    visit.start_datetime.strftime("%d/%m/%Y %H:%M")
+                start_local = fields.Datetime.context_timestamp(
+                    visit, visit.start_datetime
                 )
+                parts.append(start_local.strftime("%d/%m/%Y %H:%M"))
             visit.name = " - ".join(parts)
 
     @api.onchange("slot_id")
     def _onchange_slot_id(self):
         for visit in self:
+            if not visit.slot_id:
+                continue
+
+            slot = visit.slot_id
+
+            # Sincronizamos propiedad y agente desde el slot, si aún no están fijados
+            if not visit.property_id:
+                visit.property_id = slot.property_id
+            if not visit.agent_id:
+                visit.agent_id = slot.agent_id
+
+            # Si no hay hora aún, proponemos que inicie en el inicio de la franja
+            if not visit.start_datetime:
+                visit.start_datetime = slot.start_datetime
+
+            # Por defecto proponemos 1 hora, pero nunca pasando el fin de la franja
+            if not visit.end_datetime or visit.end_datetime <= visit.start_datetime:
+                default_end = visit.start_datetime + timedelta(hours=1)
+                if default_end > slot.end_datetime:
+                    default_end = slot.end_datetime
+                visit.end_datetime = default_end
+
+    @api.constrains("start_datetime", "end_datetime", "slot_id", "agent_id", "state")
+    def _check_visit_times(self):
+        for visit in self:
+            if not visit.start_datetime or not visit.end_datetime:
+                continue
+
+            if visit.start_datetime >= visit.end_datetime:
+                raise ValidationError(
+                    _("La hora de fin debe ser posterior a la hora de inicio.")
+                )
+
             if visit.slot_id:
-                # Sincronizamos propiedad y agente desde el slot, si aún no están fijados
-                if not visit.property_id:
-                    visit.property_id = visit.slot_id.property_id
-                if not visit.agent_id:
-                    visit.agent_id = visit.slot_id.agent_id
+                s = visit.slot_id
+                if visit.start_datetime < s.start_datetime or visit.end_datetime > s.end_datetime:
+                    raise ValidationError(
+                        _("La visita debe estar dentro de la franja del agente (%s - %s).")
+                        % (s.start_datetime, s.end_datetime)
+                    )
+
+            # No permitir solapamiento con otras visitas del mismo agente
+            domain = [
+                ("id", "!=", visit.id),
+                ("agent_id", "=", visit.agent_id.id),
+                ("state", "in", ("requested", "confirmed", "done")),
+                ("start_datetime", "<", visit.end_datetime),
+                ("end_datetime", ">", visit.start_datetime),
+            ]
+            if self.search_count(domain):
+                raise ValidationError(_("El agente ya tiene una visita en ese horario."))
 
     # -----------------------
     # Acciones de workflow
     # -----------------------
     def action_confirm(self):
+        Slot = self.env["rental.visit.slot"]
         for visit in self:
             visit.state = "confirmed"
-            if visit.slot_id and visit.slot_id.state in ("available", "reserved"):
-                visit.slot_id.state = "booked"
+
+            slot = visit.slot_id
+            if slot and slot.state in ("available", "reserved"):
+                start = slot.start_datetime
+                end = slot.end_datetime
+                vs = visit.start_datetime
+                ve = visit.end_datetime
+
+                common_vals = {
+                    "agent_id": slot.agent_id.id,
+                    "property_id": slot.property_id.id,
+                    "state": "available",
+                }
+
+                # Parte antes de la visita
+                if vs > start:
+                    Slot.create(dict(common_vals, start_datetime=start, end_datetime=vs))
+
+                # Parte después de la visita
+                if ve < end:
+                    Slot.create(dict(common_vals, start_datetime=ve, end_datetime=end))
+
+                # La franja original queda "booked" (ocupada por esta visita)
+                slot.state = "booked"
 
     def action_cancel(self):
+        Slot = self.env["rental.visit.slot"]
         for visit in self:
+            # Creamos una franja libre exactamente en el horario de la visita
+            if visit.agent_id and visit.property_id and visit.start_datetime and visit.end_datetime:
+                Slot.create(
+                    {
+                        "agent_id": visit.agent_id.id,
+                        "property_id": visit.property_id.id,
+                        "start_datetime": visit.start_datetime,
+                        "end_datetime": visit.end_datetime,
+                        "state": "available",
+                    }
+                )
+
             visit.state = "cancelled"
-            # Devolver la franja a disponible si estaba reservada/confirmada y la visita no se hizo
-            if visit.slot_id and visit.slot_id.state in ("reserved", "booked"):
-                # Opcionalmente, solo si la visita es futura
-                visit.slot_id.state = "available"
 
     def action_mark_done(self):
         for visit in self:
             visit.state = "done"
-            # La franja puede quedar como booked para histórico,
-            # o podrías cambiarla a blocked si no querés que se reutilice.
+            # La franja original ya quedó en booked, sirve como histórico
