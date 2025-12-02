@@ -1,23 +1,12 @@
 <odoo>
   <data>
-    <!-- Agregar botón al lado de "Señar" -->
     <template id="product_add_extra_button" inherit_id="website_sale.product">
-      <!-- opción A: justo después del <a id="add_to_cart">
-      <xpath expr="//a[@id='add_to_cart']" position="after">
-        <a t-att-href="'/agendar-visita/%s' % (product.id)"
-           class="btn btn-outline-primary ms-2">
-          Agendar visita
-        </a>
-      </xpath-->
-      <!-- (Si por algún motivo el <a id='add_to_cart'> no matchea, descomentá la opción B y comentá la A) -->
-
       <xpath expr="//div[@id='add_to_cart_wrap']" position="inside">
-        <a t-att-href="'/agendar-visita/%s' % (product.id)"
+        <a t-att-href="'/rental/agendar-visita/%s' % (product.id)"
            class="btn btn-outline-primary ms-2">
           Agendar visita
         </a>
       </xpath>
-
     </template>
   </data>
 </odoo>

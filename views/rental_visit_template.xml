@@ -1,0 +1,39 @@
+<odoo>
+  <data>
+
+    <!-- xml_id: sga_property_rental.rental_visit_template -->
+    <template id="rental_visit_template" name="Agendar visita portal">
+      <t t-call="website.layout">
+        <t t-set="title">Agendar visita</t>
+        <t t-set="main_object" t-value="property or product"/>
+
+        <div class="container my-5">
+          <h1 class="h3 mb-4">Agendar visita</h1>
+
+          <p>
+            <strong>Producto:</strong>
+            <t t-esc="product.name"/>
+          </p>
+
+          <p>
+            <strong>Propiedad:</strong>
+            <t t-esc="property and property.name or 'No vinculada'"/>
+          </p>
+
+          <h2 class="h5 mt-4">Franjas disponibles</h2>
+          <t t-if="not slots">
+            <p class="text-muted">No hay franjas disponibles para esta propiedad.</p>
+          </t>
+          <t t-else="">
+            <ul>
+              <t t-foreach="slots" t-as="slot">
+                <li><t t-esc="slot.name"/></li>
+              </t>
+            </ul>
+          </t>
+        </div>
+      </t>
+    </template>
+
+  </data>
+</odoo>

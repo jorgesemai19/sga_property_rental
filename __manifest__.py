@@ -6,7 +6,7 @@
     "author": "Jorge Maidana, Camila Maidana",
     "license": "LGPL-3",
     "category": "Real Estate",
-    "depends": ["base", "web", "contacts", "account", "website_google_map"],
+    "depends": ["base", "web", "contacts", "account", "website_google_map", "website",],
     "data": [
         "security/rental_security.xml",
         "security/ir.model.access.csv",
@@ -22,8 +22,8 @@
         "views/report_account_views.xml",
         "views/menu.xml",  # aquí se usa action_rental_clause
         "views/contract_report.xml",
-        "views/schedule_client_views.xml",
         "views/website_product_extra_button.xml",
+        "views/rental_visit_template.xml"
     ],
     "application": True,
 }
