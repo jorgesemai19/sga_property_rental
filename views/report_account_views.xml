@@ -68,9 +68,9 @@
         </record>
 
         <menuitem id="menu_rental_report_pagado"
-                  name="Pagado"
+                  name="Facturas de clientes"
                   parent="menu_rental_reports_root"
-                  action="action_rental_report_pagado"
+                  action="action_rental_invoice_report_wizard"
                   sequence="30"/>
 
         <!-- ========================================================= -->

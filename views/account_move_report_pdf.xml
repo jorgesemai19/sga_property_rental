@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- ========================================================= -->
+    <!-- FACTURAS DE CLIENTE A COBRAR (PDF)                        -->
+    <!-- ========================================================= -->
+
+    <record id="report_invoice_rental_to_collect" model="ir.actions.report">
+      <field name="name">Facturas de clientes a cobrar</field>
+      <field name="model">account.move</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="report_name">sga_property_rental.report_invoice_rental_to_collect_document</field>
+      <field name="report_file">sga_property_rental.report_invoice_rental_to_collect_document</field>
+      <!-- Nombre del archivo PDF -->
+      <field name="print_report_name">'Facturas_a_cobrar'</field>
+      <field name="binding_model_id" ref="account.model_account_move"/>
+      <field name="binding_type">report</field>
+      <field name="binding_view_types">list,form</field>
+    </record>
+
+    <template id="report_invoice_rental_to_collect_document">
+      <t t-call="web.html_container">
+        <!-- Usamos la primera factura como doc base para el external_layout -->
+        <t t-set="o" t-value="docs[0] if docs else False"/>
+        <t t-call="web.external_layout">
+          <div class="page">
+
+            <h2>Facturas de clientes a cobrar</h2>
+
+            <p t-if="docs">
+              Cantidad de facturas seleccionadas:
+              <strong t-esc="len(docs)"/>
+            </p>
+
+            <table class="table table-sm o_main_table" style="width: 100%; margin-top: 12px;">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Fecha</th>
+                  <th>Vencimiento</th>
+                  <th>Cliente / Inquilino</th>
+                  <th>Propiedad</th>
+                  <th style="text-align:right;">Total</th>
+                  <th style="text-align:right;">Saldo</th>
+                  <th>Estado pago</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Mostramos solo facturas de cliente no pagadas / parciales -->
+                <tr t-foreach="docs" t-as="inv"
+                    t-if="inv.move_type == 'out_invoice' and inv.payment_state in ('not_paid','partial')">
+                  <td><span t-esc="inv.name"/></td>
+                  <td><span t-esc="inv.invoice_date and format_date(inv.invoice_date) or ''"/></td>
+                  <td><span t-esc="inv.invoice_date_due and format_date(inv.invoice_date_due) or ''"/></td>
+                  <td><span t-esc="inv.partner_id.display_name"/></td>
+                  <td><span t-esc="inv.rental_property_id.display_name if inv.rental_property_id else ''"/></td>
+                  <td style="text-align:right;">
+                    <span t-esc="formatLang(inv.amount_total, currency_obj=inv.currency_id)"/>
+                  </td>
+                  <td style="text-align:right;">
+                    <span t-esc="formatLang(inv.amount_residual, currency_obj=inv.currency_id)"/>
+                  </td>
+                  <td>
+                    <span t-esc="inv.payment_state"/>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+          </div>
+        </t>
+      </t>
+    </template>
+
+    <!-- ========================================================= -->
+    <!-- FACTURAS DE CLIENTE COBRADAS (PDF)                        -->
+    <!-- ========================================================= -->
+
+    <record id="report_invoice_rental_paid" model="ir.actions.report">
+      <field name="name">Facturas de clientes cobradas</field>
+      <field name="model">account.move</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="report_name">sga_property_rental.report_invoice_rental_paid_document</field>
+      <field name="report_file">sga_property_rental.report_invoice_rental_paid_document</field>
+      <field name="print_report_name">'Facturas_cobradas'</field>
+      <field name="binding_model_id" ref="account.model_account_move"/>
+      <field name="binding_type">report</field>
+      <field name="binding_view_types">list,form</field>
+    </record>
+
+    <template id="report_invoice_rental_paid_document">
+      <t t-call="web.html_container">
+        <t t-set="o" t-value="docs[0] if docs else False"/>
+        <t t-call="web.external_layout">
+          <div class="page">
+
+            <h2>Facturas de clientes cobradas</h2>
+
+            <p t-if="docs">
+              Cantidad de facturas seleccionadas:
+              <strong t-esc="len(docs)"/>
+            </p>
+
+            <table class="table table-sm o_main_table" style="width: 100%; margin-top: 12px;">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Fecha</th>
+                  <th>Vencimiento</th>
+                  <th>Cliente / Inquilino</th>
+                  <th>Propiedad</th>
+                  <th style="text-align:right;">Total</th>
+                  <th>Estado pago</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Mostramos solo facturas de cliente pagadas -->
+                <tr t-foreach="docs" t-as="inv"
+                    t-if="inv.move_type == 'out_invoice' and inv.payment_state == 'paid'">
+                  <td><span t-esc="inv.name"/></td>
+                  <td><span t-esc="inv.invoice_date and format_date(inv.invoice_date) or ''"/></td>
+                  <td><span t-esc="inv.invoice_date_due and format_date(inv.invoice_date_due) or ''"/></td>
+                  <td><span t-esc="inv.partner_id.display_name"/></td>
+                  <td><span t-esc="inv.rental_property_id.display_name if inv.rental_property_id else ''"/></td>
+                  <td style="text-align:right;">
+                    <span t-esc="formatLang(inv.amount_total, currency_obj=inv.currency_id)"/>
+                  </td>
+                  <td>
+                    <span t-esc="inv.payment_state"/>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+          </div>
+        </t>
+      </t>
+    </template>
+
+    <!-- ========================================================= -->
+    <!-- REPORTE PDF PARA AGENTES (CONTRATOS POR AGENTE)           -->
+    <!-- ========================================================= -->
+
+    <record id="report_rental_agents_pdf" model="ir.actions.report">
+      <field name="name">Contratos por agente (PDF)</field>
+      <field name="model">rental.contract</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="report_name">sga_property_rental.report_rental_agents_pdf_document</field>
+      <field name="report_file">sga_property_rental.report_rental_agents_pdf_document</field>
+      <field name="print_report_name">'Contratos_por_agente'</field>
+    </record>
+
+    <template id="report_rental_agents_pdf_document">
+      <t t-call="web.html_container">
+        <t t-set="o" t-value="docs[0] if docs else False"/>
+        <t t-call="web.external_layout">
+          <div class="page">
+
+            <h2>Contratos por agente</h2>
+
+            <!-- Obtenemos la lista de agentes distintos -->
+            <t t-set="agents" t-value="docs.mapped('agent_id')"/>
+
+            <t t-if="not agents">
+              <p>No hay contratos con agente asignado en la selección actual.</p>
+            </t>
+
+            <!-- Sección por cada agente -->
+            <t t-foreach="agents" t-as="agent">
+              <h3 style="margin-top: 18px;">
+                Agente:
+                <span t-esc="agent.display_name"/>
+              </h3>
+              <p>
+                Teléfono:
+                <span t-esc="agent.phone or agent.mobile or '-'"/>
+              </p>
+
+              <!-- Totales rápidos por agente -->
+              <p>
+                Cantidad de contratos:
+                <strong t-esc="len([c for c in docs if c.agent_id == agent])"/>
+              </p>
+              <p>
+                Total alquiler mensual:
+                <strong>
+                  <span t-esc="formatLang(sum(c.rent_amount for c in docs if c.agent_id == agent),
+                                           currency_obj=env.company.currency_id)"/>
+                </strong>
+              </p>
+
+              <table class="table table-sm o_main_table" style="width: 100%; margin-top: 8px;">
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Propiedad</th>
+                    <th>Inquilino</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th style="text-align:right;">Alquiler mensual</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr t-foreach="[c for c in docs if c.agent_id == agent]" t-as="contract">
+                    <td><span t-esc="contract.name"/></td>
+                    <td><span t-esc="contract.property_id.display_name"/></td>
+                    <td><span t-esc="contract.tenant_id.display_name"/></td>
+                    <td><span t-esc="contract.start_date and format_date(contract.start_date) or ''"/></td>
+                    <td><span t-esc="contract.end_date and format_date(contract.end_date) or ''"/></td>
+                    <td style="text-align:right;">
+                      <span t-esc="formatLang(contract.rent_amount, currency_obj=contract.currency_id)"/>
+                    </td>
+                    <td><span t-esc="contract.state"/></td>
+                  </tr>
+                </tbody>
+              </table>
+            </t>
+
+          </div>
+        </t>
+      </t>
+    </template>
+
+  </data>
+</odoo>

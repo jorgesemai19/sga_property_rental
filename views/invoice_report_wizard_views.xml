@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- ============================
+         WIZARD FACTURAS DE CLIENTES
+         ============================ -->
+
+    <record id="view_rental_invoice_report_wizard_form" model="ir.ui.view">
+      <field name="name">rental.invoice.report.wizard.form</field>
+      <field name="model">rental.invoice.report.wizard</field>
+      <field name="arch" type="xml">
+        <form string="Facturas de clientes">
+          <group>
+            <field name="report_type"/>
+          </group>
+          <group>
+            <field name="date_from"/>
+            <field name="date_to"/>
+          </group>
+          <footer>
+            <button string="Imprimir"
+                    type="object"
+                    name="action_print_pdf"
+                    class="btn-primary"/>
+            <button string="Cancelar"
+                    special="cancel"
+                    class="btn-secondary"/>
+          </footer>
+        </form>
+      </field>
+    </record>
+
+    <record id="action_rental_invoice_report_wizard" model="ir.actions.act_window">
+      <field name="name">Facturas de clientes</field>
+      <field name="res_model">rental.invoice.report.wizard</field>
+      <field name="view_mode">form</field>
+      <field name="view_id" ref="view_rental_invoice_report_wizard_form"/>
+      <field name="target">new</field>
+    </record>
+
+    <!-- Este menú lo podés usar o podés haber reasignado otro existente -->
+    <!--
+    <menuitem id="menu_rental_report_client_invoices"
+              name="Facturas de clientes"
+              parent="menu_rental_reports_root"
+              action="action_rental_invoice_report_wizard"
+              sequence="15"/>
+    -->
+
+    <!-- ============================
+         REPORTE PDF CLIENTES
+         ============================ -->
+
+    <record id="report_invoice_rental_wizard" model="ir.actions.report">
+      <field name="name">Facturas de clientes</field>
+      <field name="model">rental.invoice.report.wizard</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="report_name">sga_property_rental.report_invoice_rental_wizard_document</field>
+      <field name="report_file">sga_property_rental.report_invoice_rental_wizard_document</field>
+      <field name="print_report_name">
+        (object.report_type == 'to_collect' and 'Facturas_clientes_a_cobrar'
+         or 'Facturas_clientes_cobradas')
+      </field>
+    </record>
+
+    <template id="report_invoice_rental_wizard_document">
+      <t t-call="web.html_container">
+        <t t-set="doc" t-value="docs[0] if docs else False"/>
+        <t t-if="doc">
+          <t t-call="web.external_layout">
+            <div class="page">
+
+              <h2 t-if="doc.report_type == 'to_collect'">
+                Facturas de clientes a cobrar
+              </h2>
+              <h2 t-if="doc.report_type == 'paid'">
+                Facturas de clientes cobradas
+              </h2>
+
+              <p>
+                Rango de fechas:
+                <strong t-esc="doc.date_from and doc.date_from.strftime('%d/%m/%Y') or ''"/>
+                -
+                <strong t-esc="doc.date_to and doc.date_to.strftime('%d/%m/%Y') or ''"/>
+              </p>
+
+              <t t-set="invoices" t-value="doc._get_invoices()"/>
+
+              <t t-if="not invoices">
+                <p>No se encontraron facturas en el rango seleccionado.</p>
+              </t>
+
+              <t t-if="invoices">
+                <table class="table table-sm o_main_table" style="width: 100%; margin-top: 12px;">
+                  <thead>
+                    <tr>
+                      <th>Número</th>
+                      <th>Fecha</th>
+                      <th>Vencimiento</th>
+                      <th>Cliente / Inquilino</th>
+                      <th>Propiedad</th>
+                      <th style="text-align:right;">Total</th>
+                      <th style="text-align:right;">Saldo</th>
+                      <th>Estado pago</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr t-foreach="invoices" t-as="inv">
+                      <td><span t-esc="inv.name"/></td>
+                      <td>
+                        <span t-esc="inv.invoice_date and inv.invoice_date.strftime('%d/%m/%Y') or ''"/>
+                      </td>
+                      <td>
+                        <span t-esc="inv.invoice_date_due and inv.invoice_date_due.strftime('%d/%m/%Y') or ''"/>
+                      </td>
+                      <td><span t-esc="inv.partner_id.display_name"/></td>
+                      <td><span t-esc="inv.rental_property_id.display_name if inv.rental_property_id else ''"/></td>
+
+                      <t t-set="currency" t-value="inv.currency_id or doc.env.company.currency_id"/>
+
+                      <td style="text-align:right;">
+                        <span t-esc="'%s %.2f' % (currency.symbol, inv.amount_total)"/>
+                      </td>
+                      <td style="text-align:right;">
+                        <span t-esc="'%s %.2f' % (currency.symbol, inv.amount_residual)"/>
+                      </td>
+
+                      <td><span t-esc="inv.payment_state"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <t t-set="total_amount" t-value="sum(invoices.mapped('amount_total'))"/>
+                <t t-set="total_residual" t-value="sum(invoices.mapped('amount_residual'))"/>
+                <t t-set="currency_total" t-value="invoices[0].currency_id if invoices else doc.env.company.currency_id"/>
+
+                <div style="margin-top: 12px; text-align: right;">
+                  <p>
+                    <strong>Total facturas:</strong>
+                    <span t-esc="'%s %.2f' % (currency_total.symbol, total_amount)"/>
+                  </p>
+                  <p t-if="doc.report_type == 'to_collect'">
+                    <strong>Saldo pendiente total:</strong>
+                    <span t-esc="'%s %.2f' % (currency_total.symbol, total_residual)"/>
+                  </p>
+                </div>
+
+              </t>
+
+            </div>
+          </t>
+        </t>
+      </t>
+    </template>
+
+    <!-- ============================
+         WIZARD FACTURAS DE PROVEEDOR
+         ============================ -->
+
+    <record id="view_rental_vendor_invoice_report_wizard_form" model="ir.ui.view">
+      <field name="name">rental.vendor.invoice.report.wizard.form</field>
+      <field name="model">rental.vendor.invoice.report.wizard</field>
+      <field name="arch" type="xml">
+        <form string="Facturas de proveedor">
+          <group>
+            <field name="report_type"/>
+          </group>
+          <group>
+            <field name="date_from"/>
+            <field name="date_to"/>
+          </group>
+          <footer>
+            <button string="Imprimir"
+                    type="object"
+                    name="action_print_pdf"
+                    class="btn-primary"/>
+            <button string="Cancelar"
+                    special="cancel"
+                    class="btn-secondary"/>
+          </footer>
+        </form>
+      </field>
+    </record>
+
+    <record id="action_rental_vendor_invoice_report_wizard" model="ir.actions.act_window">
+      <field name="name">Facturas de proveedor</field>
+      <field name="res_model">rental.vendor.invoice.report.wizard</field>
+      <field name="view_mode">form</field>
+      <field name="view_id" ref="view_rental_vendor_invoice_report_wizard_form"/>
+      <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_rental_report_vendor_invoices"
+              name="Facturas de proveedor"
+              parent="menu_rental_reports_root"
+              action="action_rental_vendor_invoice_report_wizard"
+              sequence="16"/>
+
+    <!-- ============================
+         REPORTE PDF PROVEEDORES
+         ============================ -->
+
+    <record id="report_vendor_invoice_rental_wizard" model="ir.actions.report">
+      <field name="name">Facturas de proveedor</field>
+      <field name="model">rental.vendor.invoice.report.wizard</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="report_name">sga_property_rental.report_vendor_invoice_rental_wizard_document</field>
+      <field name="report_file">sga_property_rental.report_vendor_invoice_rental_wizard_document</field>
+      <field name="print_report_name">
+        (object.report_type == 'to_collect' and 'Facturas_proveedor_a_pagar'
+         or 'Facturas_proveedor_pagadas')
+      </field>
+    </record>
+
+    <template id="report_vendor_invoice_rental_wizard_document">
+      <t t-call="web.html_container">
+        <t t-set="doc" t-value="docs[0] if docs else False"/>
+        <t t-if="doc">
+          <t t-call="web.external_layout">
+            <div class="page">
+
+              <h2 t-if="doc.report_type == 'to_collect'">
+                Facturas de proveedor a pagar
+              </h2>
+              <h2 t-if="doc.report_type == 'paid'">
+                Facturas de proveedor pagadas
+              </h2>
+
+              <p>
+                Rango de fechas:
+                <strong t-esc="doc.date_from and doc.date_from.strftime('%d/%m/%Y') or ''"/>
+                -
+                <strong t-esc="doc.date_to and doc.date_to.strftime('%d/%m/%Y') or ''"/>
+              </p>
+
+              <t t-set="invoices" t-value="doc._get_invoices()"/>
+
+              <t t-if="not invoices">
+                <p>No se encontraron facturas en el rango seleccionado.</p>
+              </t>
+
+              <t t-if="invoices">
+                <table class="table table-sm o_main_table" style="width: 100%; margin-top: 12px;">
+                  <thead>
+                    <tr>
+                      <th>Número</th>
+                      <th>Fecha</th>
+                      <th>Vencimiento</th>
+                      <th>Proveedor</th>
+                      <th style="text-align:right;">Total</th>
+                      <th style="text-align:right;">Saldo</th>
+                      <th>Estado pago</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr t-foreach="invoices" t-as="inv">
+                      <td><span t-esc="inv.name"/></td>
+                      <td>
+                        <span t-esc="inv.invoice_date and inv.invoice_date.strftime('%d/%m/%Y') or ''"/>
+                      </td>
+                      <td>
+                        <span t-esc="inv.invoice_date_due and inv.invoice_date_due.strftime('%d/%m/%Y') or ''"/>
+                      </td>
+                      <td><span t-esc="inv.partner_id.display_name"/></td>
+
+                      <t t-set="currency" t-value="inv.currency_id or doc.env.company.currency_id"/>
+
+                      <td style="text-align:right;">
+                        <span t-esc="'%s %.2f' % (currency.symbol, inv.amount_total)"/>
+                      </td>
+                      <td style="text-align:right;">
+                        <span t-esc="'%s %.2f' % (currency.symbol, inv.amount_residual)"/>
+                      </td>
+
+                      <td><span t-esc="inv.payment_state"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <t t-set="total_amount" t-value="sum(invoices.mapped('amount_total'))"/>
+                <t t-set="total_residual" t-value="sum(invoices.mapped('amount_residual'))"/>
+                <t t-set="currency_total" t-value="invoices[0].currency_id if invoices else doc.env.company.currency_id"/>
+
+                <div style="margin-top: 12px; text-align: right;">
+                  <p>
+                    <strong>Total facturas:</strong>
+                    <span t-esc="'%s %.2f' % (currency_total.symbol, total_amount)"/>
+                  </p>
+                  <p t-if="doc.report_type == 'to_collect'">
+                    <strong>Saldo pendiente total:</strong>
+                    <span t-esc="'%s %.2f' % (currency_total.symbol, total_residual)"/>
+                  </p>
+                </div>
+
+              </t>
+
+            </div>
+          </t>
+        </t>
+      </t>
+    </template>
+
+  </data>
+</odoo>

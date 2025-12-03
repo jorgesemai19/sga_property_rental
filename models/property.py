@@ -50,8 +50,9 @@ class RentalProperty(models.Model):
 
     rental_type = fields.Selection([
         ('alquiler', 'Alquiler'),
-        ('arriendo', 'Arriendo')
-    ], string="Tipo de Renta", required=True, default='alquiler')
+        ('arriendo', 'Arriendo'),
+        ('venta', 'Venta')
+    ], string="Tipo de Operación", required=True, default='alquiler')
 
     # Propiedad horizontal
     building_id = fields.Many2one("rental.building", "Edificio",
